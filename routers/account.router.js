@@ -8,15 +8,29 @@ const {
   updateAccount,
   deleteAccount,
   getAccountById,
+  refreshToken,
 } = require('../controllers/account.controller');
 
-router.route('/').post(createAccount).get(getAccounts);
+const authMiddleware = require('../middlewares/auth.middleware');
+const asyncMiddleware = require('../middlewares/async.middleware');
+const roleMiddleware = require('../middlewares/role.middleware');
 
-router.route('/login').post(login);
+router
+  .route('/')
+  .post(createAccount)
+  .get(
+    asyncMiddleware(authMiddleware),
+    roleMiddleware('admin'),
+    asyncMiddleware(getAccounts),
+  );
+
+router.route('/login').post(asyncMiddleware(login));
+
+router.route('/refresh-token').post(asyncMiddleware(refreshToken));
 
 router
   .route('/:id')
-  .patch(updateAccount)
+  .patch(asyncMiddleware(authMiddleware), asyncMiddleware(updateAccount))
   .delete(deleteAccount)
   .get(getAccountById);
 

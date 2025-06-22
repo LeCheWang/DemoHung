@@ -45,5 +45,39 @@ accountSchema.pre('save', function (next) {
 
   next();
 });
+ 
+accountSchema.pre('findOneAndUpdate', function (next) {
+  const account = { ...this.getUpdate() };
+  if (account.password) {
+    account.password = bcryptjs.hashSync(
+      account.password,
+      10,
+    );
+  }
+
+  this.setUpdate(account);
+
+  next();
+});
+
+accountSchema.pre('findByIdAndUpdate', function (next) {
+  const account = { ...this.getUpdate() };
+  if (account.password) {
+    account.password = bcryptjs.hashSync(
+      account.password,
+      10,
+    );
+  }
+
+  this.setUpdate(account);
+
+  next();
+});
+
+accountSchema.set('toJSON', {
+  transform: function (doc, ret, options) {
+    delete ret.password;
+  },
+});
 
 module.exports = mongoose.model('account', accountSchema);

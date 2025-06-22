@@ -1,6 +1,9 @@
+require('dotenv').config();
 const bcryptjs = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const AccountModel = require('../models/account.model');
 const { validCreateAccount } = require('../validations/account.valid');
+const ErrorResponse = require('../helpers/ErrorResponse');
 
 module.exports = {
   login: async (req, res) => {
@@ -9,26 +12,70 @@ module.exports = {
     const account = await AccountModel.findOne({ username });
 
     if (!account) {
-      return res.status(400).json({
-        statusCode: 400,
-        message: 'TK hoặc MK không đúng',
-      });
+      // return res.status(400).json({
+      //   statusCode: 400,
+      //   message: 'TK hoặc MK không đúng',
+      // });
+
+      throw new ErrorResponse(400, 'TK hoặc MK không đúng');
     }
 
     const checkPass = bcryptjs.compareSync(password, account.password);
 
     if (!checkPass) {
-      return res.status(400).json({
-        statusCode: 400,
-        message: 'TK hoặc MK không đúng',
-      });
+      // return res.status(400).json({
+      //   statusCode: 400,
+      //   message: 'TK hoặc MK không đúng',
+      // });
+
+      throw new ErrorResponse(400, 'TK hoặc MK không đúng');
     }
 
     // jwt
+    const payload = {
+      _id: account._id,
+      username: account.username,
+      role: account.role,
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: '15m',
+    });
+
+    const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, {
+      expiresIn: '7d',
+    });
 
     return res.status(200).json({
-      statusCode: 200,
-      message: 'Đăng nhập thành công',
+      ...payload,
+      jwt: token,
+      refreshToken,
+    });
+  },
+  refreshToken: async (req, res) => {
+    const { refreshToken } = req.body;
+
+    const decode = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+    const account = await AccountModel.findById(decode._id);
+    if (!account) {
+      throw new ErrorResponse(401, 'Hãy đăng nhập để tiếp tục');
+    }
+
+    const payload = {
+      _id: account._id,
+      username: account.username,
+      role: account.role,
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: '15m',
+    });
+
+    return res.status(200).json({
+      ...payload,
+      jwt: token,
+      refreshToken,
     });
   },
   createAccount: async (req, res) => {
