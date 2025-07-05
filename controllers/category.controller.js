@@ -4,6 +4,8 @@ module.exports = {
   createCategory: async (req, res) => {
     const body = req.body;
 
+    console.log(req.files);
+
     const category = await CategoryModel.create(body);
 
     return res.status(201).json(category);

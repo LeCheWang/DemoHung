@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const AccountModel = require('../models/account.model');
 const { validCreateAccount } = require('../validations/account.valid');
 const ErrorResponse = require('../helpers/ErrorResponse');
+const sendMail = require("../helpers/send.mail");
+const welcomeContent = require("../mail_content/welcome");
 
 module.exports = {
   login: async (req, res) => {
@@ -93,8 +95,14 @@ module.exports = {
 
     const account = await AccountModel.create(value);
 
+    sendMail({
+      to: value.email,
+      subject: 'Welcome to MANH HUNG STORE',
+      html: welcomeContent("http://localhost:5000/verify?token=abcsdadsfdsfsdafas"),
+    });
+
     return res.status(201).json(account);
-  },
+  }, 
   getAccounts: async (req, res) => {
     const { username, gender } = req.query;
     // destructuring là gì?

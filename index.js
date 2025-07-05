@@ -3,6 +3,10 @@ const express = require('express');
 
 const app = express();
 
+const { jobRemoveProduct } = require('./helpers/cron');
+
+jobRemoveProduct.start();
+
 const connectDB = require('./configs/database');
 const routers = require('./routers');
 
@@ -10,6 +14,7 @@ app.set('view engine', 'ejs');
 app.set('views', './views');
 
 app.use(express.static('public'));
+app.use(express.static('uploads'));
 
 //để client gửi dữ liệu dạng json
 // và server nhận được

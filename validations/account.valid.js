@@ -9,9 +9,8 @@ const createAccountSchema = Joi.object({
     .required(),
   password: Joi.string().pattern(new RegExp('^[a-zA-Z0-9]{3,30}$')),
   full_name: Joi.string().required(),
-  gender: Joi.string()
-    .valid('male', 'female')
-    .required(),
+  gender: Joi.string().valid('male', 'female').required(),
+  email: Joi.string(),
 });
 
 const updateAccountSchema = Joi.object({});
