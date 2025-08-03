@@ -1,11 +1,12 @@
 require('dotenv').config();
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const ExcelJS = require('exceljs'); 
 const AccountModel = require('../models/account.model');
 const { validCreateAccount } = require('../validations/account.valid');
 const ErrorResponse = require('../helpers/ErrorResponse');
-const sendMail = require("../helpers/send.mail");
-const welcomeContent = require("../mail_content/welcome");
+const sendMail = require('../helpers/send.mail');
+const welcomeContent = require('../mail_content/welcome');
 
 module.exports = {
   login: async (req, res) => {
@@ -98,11 +99,13 @@ module.exports = {
     sendMail({
       to: value.email,
       subject: 'Welcome to MANH HUNG STORE',
-      html: welcomeContent("http://localhost:5000/verify?token=abcsdadsfdsfsdafas"),
+      html: welcomeContent(
+        'http://localhost:5000/verify?token=abcsdadsfdsfsdafas',
+      ),
     });
 
     return res.status(201).json(account);
-  }, 
+  },
   getAccounts: async (req, res) => {
     const { username, gender } = req.query;
     // destructuring là gì?
@@ -119,6 +122,63 @@ module.exports = {
     const accounts = await AccountModel.find(bodyQuery);
 
     return res.status(200).json(accounts);
+  },
+  exportExcelFileAccounts: async (req, res) => {
+    const { username, gender } = req.query;
+    // destructuring là gì?
+
+    const bodyQuery = {};
+    if (username) {
+      bodyQuery.username = { $regex: `.*${username}.*`, $options: 'i' }; // i là không phân biệt hoa thường
+    }
+
+    if (gender) {
+      bodyQuery.gender = gender;
+    }
+
+    const accounts = await AccountModel.find(bodyQuery);
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Danh Sách Tài Khoản', {
+      properties: { tabColor: { argb: 'FFC0000' }, defaultColWidth: 30 },
+    });
+
+    worksheet.columns = [
+      { header: 'ID', key: '_id', width: 30 },
+      { header: 'Tên Đăng Nhập', key: 'username', width: 30 },
+      { header: 'Họ Tên', key: 'full_name', width: 30 },
+      { header: 'Giới Tính', key: 'gender', width: 30 },
+      { header: 'Quyền', key: 'role', width: 30 },
+    ];
+
+    accounts.forEach((account) => {
+      worksheet.addRow(account);
+    });
+
+    //cách 1: lưu file vào server, sau đó stream file cho client
+    // const timeNow = Date.now();
+    // const filePath = `./assets/accounts-${timeNow}.xlsx`;
+    // await workbook.xlsx.writeFile(filePath);
+
+    // //stream file để client tải về
+    // res.writeHeader(200, {
+    //   "Content-Type": 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    //   "Content-Disposition": `attachment; filename=accounts-${timeNow}.xlsx`,
+    // });
+
+    // const fileStream = fs.createReadStream(filePath);
+    // fileStream.pipe(res);
+
+    //cách 2: stream file trực tiếp mà không lưu vào server
+    
+    res.writeHeader(200, {
+      'Content-Type':
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename=accounts-${Date.now()}.xlsx`,
+    });
+    
+    await workbook.xlsx.write(res);
+    res.end();
   },
   updateAccount: async (req, res) => {
     const { id } = req.params;

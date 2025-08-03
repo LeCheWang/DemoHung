@@ -9,6 +9,7 @@ const {
   deleteAccount,
   getAccountById,
   refreshToken,
+  exportExcelFileAccounts,
 } = require('../controllers/account.controller');
 
 const authMiddleware = require('../middlewares/auth.middleware');
@@ -23,6 +24,8 @@ router
     roleMiddleware('admin'),
     asyncMiddleware(getAccounts),
   );
+
+router.route('/export-excel').get(asyncMiddleware(exportExcelFileAccounts));
 
 router.route('/login').post(asyncMiddleware(login));
 
